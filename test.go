@@ -10,11 +10,12 @@ func main() {
 	fmt.Print(str)
 
 }
-
-func Unit8FromInt(n int) (uint8, error) {
-
-	if 0 <= n && n < math.MaxUint8 {
-		return uint8(n), nil
+func (st *Stack) Pop() int {
+	v := 0
+	for ix := len(st) - 1; ix >= 0; ix-- {
+		if v = st[ix]; v != 0 {
+			st[ix] = 0
+			return v
+		}
 	}
-	return 0, fmt.Errorf("%d is is out of the unit8 ranger", n)
 }
