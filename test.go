@@ -1,5 +1,6 @@
 package main
 
+<<<<<<< HEAD
 import (
 	"fmt"
 	"time"
@@ -13,6 +14,19 @@ func main() {
 		func() {
 			fmt.Print(ix, " ")
 		}() // 调用闭包打印每个索引值
+=======
+func main() {
+	a := "hello"
+	var b *string
+	var c *string
+	for k, v := range a {
+		if k < 2 {
+			*b = v
+		}
+		if k >= 2 {
+			&c += v
+		}
+>>>>>>> 60df1f4f46255541ed2e92dc8769ab2e51f67e16
 	}
 	fmt.Println()
 	// 版本B: 和A版本类似，但是通过调用闭包作为一个协程
