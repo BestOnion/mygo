@@ -10,88 +10,72 @@ type Server struct {
 	Ip   string
 	Port int
 
-	//在线用户的列表
 	OnlineMap map[string]*User
 	mapLock   sync.RWMutex
-
-	//消息广播的channel
-	Message chan string
+	Message   chan string
 }
 
-//创建一个server的接口
 func NewServer(ip string, port int) *Server {
-	server := &Server{
+	return &Server{
 		Ip:        ip,
 		Port:      port,
 		OnlineMap: make(map[string]*User),
 		Message:   make(chan string),
 	}
-
-	return server
 }
 
-//监听Message广播消息channel的goroutine，一旦有消息就发送给全部的在线User
-func (this *Server) ListenMessager() {
+//一旦有消息，就发送给所有的user
+func (this *Server) ListenMessage() {
 	for {
-		msg := <-this.Message
 
-		//将msg发送给全部的在线User
+		mess := <-this.Message
 		this.mapLock.Lock()
 		for _, cli := range this.OnlineMap {
-			cli.C <- msg
+			cli.C <- mess
 		}
 		this.mapLock.Unlock()
 	}
 }
 
-//广播消息的方法
-func (this *Server) BroadCast(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "]" + user.Name + ":" + msg
+func (this *Server) broderMessage(user *User, message string) {
 
-	this.Message <- sendMsg
+	fmt.Print(1)
+	this.Message <- "[" + user.Addr + "]" + user.Name + ":" + message
+
 }
 
 func (this *Server) Handler(conn net.Conn) {
-	//...当前链接的业务
-	//fmt.Println("链接建立成功")
+	fmt.Print("建立连接", conn.LocalAddr().String())
 
 	user := NewUser(conn)
-
-	//用户上线,将用户加入到onlineMap中
+	//用户上线
 	this.mapLock.Lock()
 	this.OnlineMap[user.Name] = user
 	this.mapLock.Unlock()
 
-	//广播当前用户上线消息
-	this.BroadCast(user, "已上线")
+	//广播消息
+	this.broderMessage(user, "当前用户上线了")
 
-	//当前handler阻塞
-	select {}
+	// select {}
 }
 
-//启动服务器的接口
 func (this *Server) Start() {
-	//socket listen
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", this.Ip, this.Port))
-	if err != nil {
-		fmt.Println("net.Listen err:", err)
-		return
-	}
-	//close listen socket
-	defer listener.Close()
+	listen, err := net.Listen("tcp", fmt.Sprintf("%s:%d", this.Ip, this.Port))
 
-	//启动监听Message的goroutine
-	go this.ListenMessager()
+	if err != nil {
+		fmt.Print("net.listen error", err)
+	}
+	defer listen.Close()
+
+	go this.ListenMessage()
 
 	for {
-		//accept
-		conn, err := listener.Accept()
+		connet, err := listen.Accept()
 		if err != nil {
-			fmt.Println("listener accept err:", err)
+			fmt.Print("listen.accetpt error", err)
 			continue
 		}
+		go this.Handler(connet)
 
-		//do handler
-		go this.Handler(conn)
 	}
 }
