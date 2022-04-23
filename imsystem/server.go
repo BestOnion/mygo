@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -47,14 +48,31 @@ func (this *Server) broderMessage(user *User, message string) {
 func (this *Server) Handler(conn net.Conn) {
 	fmt.Print("建立连接", conn.LocalAddr().String())
 
-	user := NewUser(conn)
-	//用户上线
-	this.mapLock.Lock()
-	this.OnlineMap[user.Name] = user
-	this.mapLock.Unlock()
+	user := NewUser(conn, this)
 
-	//广播消息
-	this.broderMessage(user, "当前用户上线了")
+	//上线
+	user.Online()
+
+	go func() {
+		buf := make([]byte, 4896)
+		for {
+
+			n, err := conn.Read(buf)
+			if n == 0 {
+				//下线
+				user.OffLine()
+				return
+			}
+			if err != nil && err != io.EOF {
+				fmt.Printf("connect error", err)
+				return
+			}
+
+			message := string(buf[:n-1])
+			//发送消息
+			user.Domessage(message)
+		}
+	}()
 
 	// select {}
 }
@@ -78,4 +96,6 @@ func (this *Server) Start() {
 		go this.Handler(connet)
 
 	}
+
+	fmt.Println("启动成功")
 }
